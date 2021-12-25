@@ -1,6 +1,6 @@
 <template>
-  <div id="app">
-    <div class="bg">
+  <div id="app" v-show="pageShow">
+    <div class="bg" id="bg">
       <div class="danmu">
         <vue-baberrage
           :isShow="barrageIsShow"
@@ -78,6 +78,7 @@ export default {
   name: "App",
   data() {
     return {
+      pageShow: false,
       barrageIsShow: true,
       barrageList: [],
       barrageLoop: true,
@@ -99,6 +100,9 @@ export default {
   mounted() {
     this.init();
     this.initStars();
+    document.addEventListener("DOMContentLoaded", () => {
+      this.pageShow = true;
+    });
   },
   methods: {
     init() {
@@ -181,6 +185,11 @@ export default {
 </script>
 
 <style lang="less">
+select,
+input,
+textarea {
+  outline: none;
+}
 body {
   margin: 0px;
   padding: 0px;
@@ -293,19 +302,19 @@ body {
         color: #0f1628;
       }
       .select {
-        width: 560px;
+        width: 580px;
         height: 70px;
         background: #f4f4f4;
         border: 1px solid #707070;
       }
       .name {
-        width: 560px;
+        width: 540px;
         height: 70px;
         background: #f4f4f4;
         border: 1px solid #707070;
       }
       .mubiao {
-        width: 560px;
+        width: 540px;
         height: 232px;
         background: #f4f4f4;
         border: 1px solid #707070;

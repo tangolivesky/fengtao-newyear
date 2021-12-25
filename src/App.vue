@@ -1,5 +1,5 @@
 <template>
-  <div id="app" v-show="pageShow">
+  <div id="app">
     <div class="bg" id="bg">
       <div class="danmu">
         <vue-baberrage
@@ -16,13 +16,15 @@
         </vue-baberrage>
       </div>
       <div class="logo-wrap">
-        <img class="logo" src="./assets/3flogo.png" />
-        <canvas
-          class="canvas"
-          width="750"
-          height="720"
-          id="starCanvas"
-        ></canvas>
+        <div v-show="pageShow">
+          <img class="logo" src="./assets/3flogo.png" />
+          <canvas
+            class="canvas"
+            width="750"
+            height="720"
+            id="starCanvas"
+          ></canvas>
+        </div>
       </div>
       <div class="flag">
         <img class="img" src="./assets/huhu.png" />
@@ -79,7 +81,7 @@ export default {
   name: "App",
   data() {
     return {
-      pageShow:false,
+      pageShow: false,
       barrageIsShow: true,
       barrageList: [],
       barrageLoop: true,
@@ -118,6 +120,7 @@ export default {
         const bg = document.getElementById("bg");
         bg.style.backgroundImage = "url('" + bgImg + "')";
         this.pageShow = true;
+        this.barrageIsShow = true;
       };
     },
     addToList(id, msg) {
@@ -207,7 +210,7 @@ body {
   margin: 0px;
   padding: 0px;
   .bg {
-    background: url("./assets/bg1.jpg");
+    background: url("./assets/bg.jpg");
     background-repeat: no-repeat;
     background-size: cover;
     width: 100%;
@@ -229,6 +232,8 @@ body {
     }
     .logo-wrap {
       position: relative;
+      width: 750px;
+      height: 720px;
       .logo {
         width: 750px;
         height: 720px;

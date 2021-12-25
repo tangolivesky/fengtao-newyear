@@ -73,12 +73,13 @@ import { MESSAGE_TYPE } from "vue-baberrage";
 import stars from "./star";
 import greenStarImg from "./assets/greenstar.png";
 import yellowStarImg from "./assets/yellowstar.png";
+import bgImg from "./assets/bg.jpg";
 
 export default {
   name: "App",
   data() {
     return {
-      pageShow: false,
+      pageShow:false,
       barrageIsShow: true,
       barrageList: [],
       barrageLoop: true,
@@ -100,16 +101,24 @@ export default {
   mounted() {
     this.init();
     this.initStars();
-    document.addEventListener("DOMContentLoaded", () => {
-      this.pageShow = true;
-    });
   },
   methods: {
     init() {
+      this.initBg();
       const c = document.getElementById("starCanvas");
       const ctx = c.getContext("2d");
       this.canvasObj = c;
       this.canvasCtx = ctx;
+    },
+    //背景加载完毕
+    initBg() {
+      const image1 = new Image();
+      image1.src = bgImg;
+      image1.onload = () => {
+        const bg = document.getElementById("bg");
+        bg.style.backgroundImage = "url('" + bgImg + "')";
+        this.pageShow = true;
+      };
     },
     addToList(id, msg) {
       this.barrageList.push({
@@ -198,7 +207,7 @@ body {
   margin: 0px;
   padding: 0px;
   .bg {
-    background: url("./assets/bg.jpg");
+    background: url("./assets/bg1.jpg");
     background-repeat: no-repeat;
     background-size: cover;
     width: 100%;

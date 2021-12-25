@@ -189,7 +189,7 @@ body {
   margin: 0px;
   padding: 0px;
   .bg {
-    background: url("./assets/bg.png");
+    background: url("./assets/bg.jpg");
     background-repeat: no-repeat;
     background-size: cover;
     width: 100%;

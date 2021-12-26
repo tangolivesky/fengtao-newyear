@@ -1,6 +1,7 @@
 <template>
   <div id="app">
-    <div class="bg" id="bg">
+    <div class="bg" id="bg"></div>
+    <div class="content">
       <div class="danmu">
         <vue-baberrage
           :isShow="barrageIsShow"
@@ -30,24 +31,37 @@
         <img class="img" src="./assets/huhu.png" />
       </div>
       <div class="btn-wrap">
-        <div class="btn" v-on:click="btnShow">
+        <div class="btn" v-on:click="btnFlashClick">
           <div class="txt">我的FLAG</div>
         </div>
       </div>
     </div>
+
     <div class="modal" v-show="modalShow">
       <div class="dialog">
         <div class="title">部门</div>
         <div class="wrap">
-          <select v-model="form.department" class="select">
-            <option value="1">测试</option>
+          <select
+            :disabled="!btnFlashShow"
+            v-model="form.Company"
+            @change="departChange($event)"
+            class="select"
+          >
+            <option
+              v-bind:key="index"
+              v-for="(item, index) in departOptions"
+              :value="item.value"
+            >
+              {{ item.name }}
+            </option>
           </select>
         </div>
         <div class="title">姓名</div>
         <div class="wrap">
           <input
+            :disabled="!btnFlashShow"
             placeholder="请填写您的姓名"
-            v-model="form.name"
+            v-model="form.Name"
             type="text"
             class="name"
           />
@@ -55,14 +69,20 @@
         <div class="title">目标</div>
         <div class="wrap">
           <textarea
+            :disabled="!btnFlashShow"
             placeholder="请填写20个字以内"
-            v-model="form.target"
+            v-model="form.FlagContent"
             class="mubiao"
           ></textarea>
         </div>
-        <div class="btn-wrap">
+        <div class="btn-wrap" v-if="btnFlashShow">
           <div class="btn" v-on:click="save">
             <div class="txt">提交</div>
+          </div>
+        </div>
+        <div class="btn-wrap" v-if="!btnFlashShow">
+          <div class="btn" v-on:click="modalClose">
+            <div class="txt">关闭</div>
           </div>
         </div>
       </div>
@@ -72,16 +92,18 @@
 
 <script>
 import { MESSAGE_TYPE } from "vue-baberrage";
+import ajax from "./ajax";
 import stars from "./star";
 import greenStarImg from "./assets/greenstar.png";
 import yellowStarImg from "./assets/yellowstar.png";
 import bgImg from "./assets/bg.jpg";
+import departs from "./depart.json";
 
 export default {
   name: "App",
   data() {
     return {
-      pageShow: false,
+      pageShow: true,
       barrageIsShow: true,
       barrageList: [],
       barrageLoop: true,
@@ -90,63 +112,163 @@ export default {
       canvasCtx: null,
       greenStarImg: greenStarImg,
       form: {
-        department: "",
-        name: "",
-        target: "",
+        Company: "",
+        Name: "",
+        FlagContent: "",
       },
+      departOptions: [],
       tempId: 0,
       localStars: stars,
       interId: 0,
+      btnFlashShow: false,
     };
   },
   components: {},
   mounted() {
-    this.init();
-    this.initStars();
+    this.initBg();
+    this.initStatus();
+    this.initDeparts();
+    this.initCanvas();
+    this.initDatas();
   },
   methods: {
-    init() {
-      this.initBg();
+    //查看个人的提交状态
+    initStatus() {
+      const personxh = localStorage.getItem("personxh");
+      if (personxh) {
+        const form = new FormData();
+        form.set("Xh", personxh);
+        ajax
+          .post("/GetStatusByXh", form)
+          .then((res) => {
+            const data = res.data;
+            if (data.Code === 1) {
+              data.Status = 0;
+              if (data.Status === 0) {
+                this.btnFlashShow = true;
+                localStorage.setItem("Company", "");
+                localStorage.setItem("Name", "");
+                localStorage.setItem("FlagContent", "");
+              }
+            }
+          })
+          .catch((err) => {
+            console.log("err", err);
+          });
+      } else {
+        this.btnFlashShow = true;
+      }
+    },
+    initCanvas() {
       const c = document.getElementById("starCanvas");
       const ctx = c.getContext("2d");
       this.canvasObj = c;
       this.canvasCtx = ctx;
+    },
+    initDeparts() {
+      if (Array.isArray(departs)) {
+        departs.forEach((item) => {
+          this.departOptions.push({
+            name: item,
+            value: item,
+          });
+        });
+      }
     },
     //背景加载完毕
     initBg() {
       const image1 = new Image();
       image1.src = bgImg;
       image1.onload = () => {
-        const bg = document.getElementById("bg");
-        bg.style.backgroundImage = "url('" + bgImg + "')";
         this.pageShow = true;
         this.barrageIsShow = true;
       };
     },
+    departChange(event) {
+      this.form.Company = event.target.value;
+    },
     addToList(id, msg) {
+      let extraWidth = 0;
+      if (msg.length < 5) {
+        extraWidth = 30;
+      }
+      if (msg.length >= 5 && msg.length < 10) {
+        extraWidth = 60;
+      }
+      if (msg.length >= 10 && msg.length < 15) {
+        extraWidth = 80;
+      }
+      if (msg.length >= 15 && msg.length < 20) {
+        extraWidth = 100;
+      }
       this.barrageList.push({
         id: id,
         msg: msg,
         time: 5,
         type: MESSAGE_TYPE.NORMAL,
+        extraWidth: extraWidth,
       });
     },
-    //初始化星星，需要调用接口获取已经点亮的星星
-    initStars() {
+    initDatas() {
+      ajax
+        .get("/GetChat")
+        .then((res) => {
+          const data = res.data;
+
+          let tempSet = new Map();
+          data.datas.forEach((item) => {
+            tempSet.set(item.Xh, item.FlagContent);
+            this.addToList(item.Xh, item.FlagContent);
+          });
+
+          this.localStars = this.localStars.map((star) => {
+            if (tempSet.has(star.id.toString())) {
+              star.status = true;
+            }
+            return star;
+          });
+
+          this.drawStars();
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+    },
+    modalClose() {
+      this.modalShow = false;
+    },
+    //画星星，需要调用接口获取已经点亮的星星
+    drawStars() {
+      const personxh = localStorage.getItem("personxh");
+
       this.canvasCtx.clearRect(0, 0, 750, 720); // clear canvas
       this.localStars.forEach((item) => {
         const img = new Image();
         if (item.status === true) {
-          img.src = yellowStarImg;
-          img.onload = () => {
-            this.canvasCtx.drawImage(
-              img,
-              item.x,
-              item.y,
-              item.width,
-              item.height
-            );
-          };
+          //如果是自己的星星,展示黄色
+          if (personxh === item.id.toString()) {
+            img.src = yellowStarImg;
+            img.onload = () => {
+              this.canvasCtx.drawImage(
+                img,
+                item.x,
+                item.y,
+                item.width,
+                item.height
+              );
+            };
+          } else {
+            img.src = greenStarImg;
+            img.onload = () => {
+              this.canvasCtx.drawImage(
+                img,
+                item.x,
+                item.y,
+                item.width,
+                item.height
+              );
+            };
+          }
         } else {
           img.src = greenStarImg;
           img.onload = () => {
@@ -162,35 +284,66 @@ export default {
       });
     },
     //画星星，画自己的那颗星星
-    drawStars(id) {
+    reDrawStars(id) {
       this.localStars = this.localStars.map((item) => {
         if (item.id === id) {
           item.status = true;
         }
         return item;
       });
-      this.initStars();
+      this.drawStars();
     },
-    btnShow() {
+    btnFlashClick() {
       this.modalShow = true;
+      this.form.Company = localStorage.getItem("Company");
+      this.form.Name = localStorage.getItem("Name");
+      this.form.FlagContent = localStorage.getItem("FlagContent");
     },
     save() {
-      if (this.form.name.trim() === "") {
+      if (this.form.Company.trim() === "") {
+        alert("请填写您的部门");
+        return;
+      }
+      if (this.form.Name.trim() === "") {
         alert("请填写您的姓名");
         return;
       }
-      if (this.form.target.trim() === "") {
+      if (this.form.FlagContent.trim() === "") {
         alert("请填写您的目标");
         return;
       }
-      if (this.form.target.length > 20) {
+      if (this.form.FlagContent.length > 20) {
         alert("请填写20个字以内");
         return;
       }
-      this.tempId = this.tempId + 1;
-      this.addToList(this.tempId, this.form.target);
-      this.drawStars(this.tempId);
-      this.modalShow = false;
+      const postForm = new FormData();
+      postForm.append("Company", this.form.Company);
+      postForm.append("Name", this.form.Name);
+      postForm.append("FlagContent", this.form.FlagContent);
+      ajax
+        .post("/UpdateFlag", postForm)
+        .then((res) => {
+          const data = res.data;
+
+          if (data.Code === 1) {
+            const tempId = data.Xh;
+            this.btnFlashShow = false;
+            localStorage.setItem("personxh", tempId);
+            localStorage.setItem("Company", this.form.Company);
+            localStorage.setItem("Name", this.form.Name);
+            localStorage.setItem("FlagContent", this.form.FlagContent);
+            this.addToList(tempId, this.form.FlagContent);
+            this.reDrawStars(tempId);
+          } else {
+            alert(data.Msg);
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        })
+        .finally(() => {
+          this.modalShow = false;
+        });
     },
   },
 };
@@ -207,16 +360,21 @@ body {
   padding: 0px;
 }
 #app {
-  margin: 0px;
-  padding: 0px;
   .bg {
     background: url("./assets/bg.jpg");
     background-repeat: no-repeat;
     background-size: cover;
+    position: fixed;
     width: 100%;
-    height: 1666px;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 0;
+  }
+  .content {
     .danmu {
-      height: 308px;
+      height: 200px;
+      position: relative;
       .content {
         height: 60px;
         text-align: center;
@@ -248,6 +406,7 @@ body {
       }
     }
     .flag {
+      position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -257,10 +416,12 @@ body {
       }
     }
     .btn-wrap {
-      margin-top: 130px;
+      position: relative;
+      margin-top: 60px;
       display: flex;
       justify-content: center;
       align-items: center;
+
       .btn {
         width: 480px;
         height: 100px;
@@ -280,6 +441,7 @@ body {
       }
     }
   }
+
   .modal {
     z-index: 999;
     position: fixed;

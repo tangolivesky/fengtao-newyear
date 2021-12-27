@@ -143,7 +143,6 @@ export default {
           .then((res) => {
             const data = res.data;
             if (data.Code === 1) {
-              data.Status = 0;
               if (data.Status === 0) {
                 this.btnFlashShow = true;
                 localStorage.setItem("Company", "");
@@ -269,18 +268,19 @@ export default {
               );
             };
           }
-        } else {
-          img.src = greenStarImg;
-          img.onload = () => {
-            this.canvasCtx.drawImage(
-              img,
-              item.x,
-              item.y,
-              item.width,
-              item.height
-            );
-          };
-        }
+        } 
+        // else {
+        //   img.src = greenStarImg;
+        //   img.onload = () => {
+        //     this.canvasCtx.drawImage(
+        //       img,
+        //       item.x,
+        //       item.y,
+        //       item.width,
+        //       item.height
+        //     );
+        //   };
+        // }
       });
     },
     //画星星，画自己的那颗星星
@@ -378,14 +378,14 @@ body {
       .content {
         height: 60px;
         text-align: center;
-        background: #ffffff;
+        // background: #ffffff;
         border-radius: 30px;
         font-size: 30px;
         font-family: PingFang SC;
         font-weight: 400;
         line-height: 60px;
         padding: 0px 15px;
-        color: #0f1628;
+        color: #ffffff;
       }
     }
     .logo-wrap {

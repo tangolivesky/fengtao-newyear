@@ -70,7 +70,7 @@
         <div class="wrap">
           <textarea
             :disabled="!btnFlashShow"
-            placeholder="请填写20个字以内"
+            placeholder="请填写10到20字的内容"
             v-model="form.FlagContent"
             class="mubiao"
           ></textarea>
@@ -295,11 +295,21 @@ export default {
     },
     btnFlashClick() {
       this.modalShow = true;
-      this.form.Company = localStorage.getItem("Company");
-      this.form.Name = localStorage.getItem("Name");
-      this.form.FlagContent = localStorage.getItem("FlagContent");
+      this.form.Company =
+        localStorage.getItem("Company") != null
+          ? localStorage.getItem("Company")
+          : "";
+      this.form.Name =
+        localStorage.getItem("Name") != null
+          ? localStorage.getItem("Name")
+          : "";
+      this.form.FlagContent =
+        localStorage.getItem("FlagContent") != null
+          ? localStorage.getItem("FlagContent")
+          : "";
     },
     save() {
+      console.log("this.form", this.form);
       if (this.form.Company.trim() === "") {
         alert("请填写您的部门");
         return;
@@ -312,8 +322,11 @@ export default {
         alert("请填写您的目标");
         return;
       }
-      if (this.form.FlagContent.length > 20) {
-        alert("请填写20个字以内");
+      if (
+        this.form.FlagContent.length > 20 ||
+        this.form.FlagContent.length < 10
+      ) {
+        alert("请填写10到20字的内容");
         return;
       }
       const postForm = new FormData();

@@ -70,7 +70,7 @@
         <div class="wrap">
           <textarea
             :disabled="!btnFlashShow"
-            placeholder="请填写10到20字的内容"
+            placeholder="请填写10-20字（含标点符号）"
             v-model="form.FlagContent"
             class="mubiao"
           ></textarea>
@@ -322,13 +322,13 @@ export default {
         alert("请填写您的目标");
         return;
       }
-      if (
-        this.form.FlagContent.length > 20 ||
-        this.form.FlagContent.length < 10
-      ) {
-        alert("请填写10到20字的内容");
-        return;
-      }
+      // if (
+      //   this.form.FlagContent.length > 20 ||
+      //   this.form.FlagContent.length < 10
+      // ) {
+      //   alert("请填写10到20字的内容");
+      //   return;
+      // }
       const postForm = new FormData();
       postForm.append("Company", this.form.Company);
       postForm.append("Name", this.form.Name);
@@ -347,6 +347,7 @@ export default {
             localStorage.setItem("FlagContent", this.form.FlagContent);
             this.addToList(tempId, this.form.FlagContent);
             this.reDrawStars(tempId);
+            this.modalShow = false;
           } else {
             alert(data.Msg);
           }
@@ -355,7 +356,7 @@ export default {
           console.log("err", err);
         })
         .finally(() => {
-          this.modalShow = false;
+          //this.modalShow = false;
         });
     },
   },

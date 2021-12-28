@@ -329,6 +329,15 @@ export default {
       //   alert("请填写10到20字的内容");
       //   return;
       // }
+
+      /* eslint-disable*/
+      this.form.Name = this.form.Name.replace(/\n|\r/g,"");
+      this.form.FlagContent = this.form.FlagContent.replace(/\n|\r/g,"");
+
+      this.form.Name = this.form.Name.replace(/\"/g, "“");
+      this.form.FlagContent = this.form.FlagContent.replace(/\"/g, "“");
+      
+
       const postForm = new FormData();
       postForm.append("Company", this.form.Company);
       postForm.append("Name", this.form.Name);

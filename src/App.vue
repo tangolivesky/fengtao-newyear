@@ -192,13 +192,13 @@ export default {
         extraWidth = 30;
       }
       if (msg.length >= 5 && msg.length < 10) {
-        extraWidth = 60;
+        extraWidth = 90;
       }
       if (msg.length >= 10 && msg.length < 15) {
-        extraWidth = 80;
+        extraWidth = 90;
       }
-      if (msg.length >= 15 && msg.length < 20) {
-        extraWidth = 100;
+      if (msg.length >= 15 && msg.length <= 21) {
+        extraWidth = 130;
       }
       this.barrageList.push({
         id: id,

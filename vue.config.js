@@ -28,7 +28,7 @@ module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: `http://zfsc-manage.hzdsinfo.com/Flag`,
+        target: `http://zfsc-manage.hzdsinfo.com`,
         changeOrigin: true,
         pathRewrite: {
           '^/api': ''

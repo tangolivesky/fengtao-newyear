@@ -4,7 +4,7 @@ function getBaseURL() {
     let baseURL = ''
     switch (process.env.NODE_ENV) {
         case 'production':
-            baseURL = 'http://zfsc-manage.hzdsinfo.com/Flag'
+            baseURL = 'http://zfsc-manage.hzdsinfo.com/'
             break
         case 'development':
             baseURL = 'api/'

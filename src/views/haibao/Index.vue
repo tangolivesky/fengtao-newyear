@@ -104,8 +104,11 @@
             />
           </div>
           <div class="btn-wrap">
-            <div class="btn" v-on:click="save">
+            <div class="btn" v-on:click="save" v-show="canSubmit">
               <div class="txt">提交</div>
+            </div>
+            <div class="btn" v-on:click="closeBtn" v-show="!canSubmit">
+              <div class="txt">关闭</div>
             </div>
           </div>
         </div>
@@ -143,6 +146,7 @@ export default {
         Name: "",
         ImageUrl: "",
       },
+      canSubmit: true,
       uploadImg: "",
       uploadFile: null,
       departOptions: [],
@@ -170,6 +174,7 @@ export default {
       this.getList();
       this.initDeparts();
       this.getStatusByPhone();
+      this.checkCanSubmitDate();
     },
     //初始化浏览器唯一编码
     initPhoneId() {
@@ -407,6 +412,23 @@ export default {
     },
     closeBtn() {
       this.modalShow = false;
+    },
+    checkCanSubmitDate() {
+      ajax
+        .post("/Poster/CheckDateTime")
+        .then((res) => {
+          const data = res.data;
+          if (data.Code === 1) {
+            this.canSubmit = true;
+          } else {
+            this.canSubmit = false;
+            alert(data.Msg);
+          }
+        })
+        .catch((err) => {
+          this.canSubmit = false;
+          console.log("err", err);
+        });
     },
   },
 };

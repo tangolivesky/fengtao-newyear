@@ -10,6 +10,7 @@
   "dependencies": {
     "axios": "^0.24.0",
     "core-js": "^3.6.5",
+    "hevue-img-preview": "^5.0.2",
     "uuid": "^8.3.2",
     "vue": "^2.6.11",
     "vue-baberrage": "^3.2.4",

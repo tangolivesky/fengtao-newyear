@@ -5,7 +5,11 @@
       <div class="search-wrap">
         <div class="search">
           <img src="../../assets/haibao/search.png" />
-          <input type="text" />
+          <input
+            type="search"
+            v-model="keywordText"
+            @keyup.enter="handleSearch()"
+          />
         </div>
       </div>
       <div class="haibao-list">
@@ -14,11 +18,19 @@
           v-for="(item, index) in haibaoList"
           v-bind:key="index"
         >
-          <img class="img" :src="item.img" />
+          <img
+            @click="imagePreviewClick(item.originUrl)"
+            class="img"
+            :src="item.img"
+          />
           <div class="content">
             <div class="row1">
               <div class="name">{{ item.name }}</div>
-              <div class="like" :class="{ isLike: item.isLike }">
+              <div
+                class="like"
+                v-on:click="likeClick(item)"
+                :class="{ isLike: item.isLike }"
+              >
                 <img
                   class="img"
                   v-if="!item.isLike"
@@ -46,58 +58,63 @@
     </div>
     <div class="modal" v-show="modalShow">
       <div class="dialog">
-        <div class="title">部门</div>
-        <div class="wrap">
-          <select
-            v-model="form.Company"
-            @change="departChange($event)"
-            class="select"
-          >
-            <option
-              v-bind:key="index"
-              v-for="(item, index) in departOptions"
-              :value="item.value"
+        <div class="input-dialog" v-show="!haveUpload">
+          <div class="title">部门</div>
+          <div class="wrap">
+            <select
+              v-model="form.Company"
+              @change="departChange($event)"
+              class="select"
             >
-              {{ item.name }}
-            </option>
-          </select>
-        </div>
-        <div class="title">姓名</div>
-        <div class="wrap">
-          <input
-            placeholder="请填写您的姓名"
-            v-model="form.Name"
-            type="text"
-            class="name"
-          />
-        </div>
-        <div class="title">手机号</div>
-        <div class="wrap">
-          <input
-            placeholder="请填写您的手机号"
-            v-model="form.Phone"
-            type="text"
-            class="name"
-          />
-        </div>
-        <div class="title">上传海报</div>
-        <div class="wrap2">
-          <div v-show="hasUpload" class="upload-img" v-on:click="uploadClick">
-            <img :src="uploadImg" />
+              <option
+                v-bind:key="index"
+                v-for="(item, index) in departOptions"
+                :value="item.value"
+              >
+                {{ item.name }}
+              </option>
+            </select>
           </div>
-          <div v-show="!hasUpload" class="upload-area" v-on:click="uploadClick">
-            <img src="../../assets/haibao/add.png" />
+          <div class="title">姓名</div>
+          <div class="wrap">
+            <input
+              placeholder="请填写您的姓名"
+              v-model="form.Name"
+              type="text"
+              class="name"
+            />
           </div>
-          <input
-            style="display: none"
-            ref="inputFile"
-            type="file"
-            accept="image/*"
-          />
+          <div class="title">上传海报</div>
+          <div class="wrap2">
+            <div v-show="hasUpload" class="upload-img" v-on:click="uploadClick">
+              <img :src="uploadImg" />
+            </div>
+            <div
+              v-show="!hasUpload"
+              class="upload-area"
+              v-on:click="uploadClick"
+            >
+              <img src="../../assets/haibao/add.png" />
+            </div>
+            <input
+              style="display: none"
+              ref="inputFile"
+              type="file"
+              accept="image/*"
+            />
+          </div>
+          <div class="btn-wrap">
+            <div class="btn" v-on:click="save">
+              <div class="txt">提交</div>
+            </div>
+          </div>
         </div>
-        <div class="btn-wrap">
-          <div class="btn" v-on:click="save">
-            <div class="txt">提交</div>
+        <div class="haveImg" v-show="haveUpload">
+          <img :src="myPoster" />
+          <div class="btn-wrap">
+            <div class="btn" v-on:click="closeBtn">
+              <div class="txt">关闭</div>
+            </div>
           </div>
         </div>
       </div>
@@ -109,13 +126,17 @@
 import departs from "./depart.json";
 import ajax from "../../core/ajax";
 import axios from "axios";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export default {
   name: "App",
   data() {
     return {
+      myPoster: "",
+      haveUpload: false,
+      keywordText: "",
       haibaoList: [],
+      originList: [],
       modalShow: false,
       form: {
         Company: "",
@@ -126,6 +147,7 @@ export default {
       uploadFile: null,
       departOptions: [],
       hasUpload: false,
+      defaultHost: "http://zfsc-poster.oss-cn-beijing.aliyuncs.com/",
       ossConfig: {
         accessid: "",
         policy: "",
@@ -136,14 +158,26 @@ export default {
     };
   },
   components: {},
+  created() {
+    document.title = "外服工会征集最美海报";
+  },
   mounted() {
     this.init();
   },
   methods: {
     init() {
-      this.initFakeDate();
+      this.initPhoneId();
+      this.getList();
       this.initDeparts();
-      this.initOss();
+      this.getStatusByPhone();
+    },
+    //初始化浏览器唯一编码
+    initPhoneId() {
+      const phone_uuid = localStorage.getItem("phone_uuid");
+      if (!phone_uuid) {
+        const uuid = uuidv4();
+        localStorage.setItem("phone_uuid", uuid);
+      }
     },
     initOss() {
       ajax
@@ -161,53 +195,6 @@ export default {
         });
     },
     initHeight() {},
-    initFakeDate() {
-      const templist = [
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: false,
-          likeNum: 20,
-        },
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: true,
-          likeNum: 20,
-        },
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: true,
-          likeNum: 20,
-        },
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: true,
-          likeNum: 20,
-        },
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: true,
-          likeNum: 20,
-        },
-        {
-          img: "https://wf-appoint.oss-cn-hangzhou.aliyuncs.com/76/81522b4a-2fe6-49fb-b226-3407f69798fb1615392609293",
-          name: "张春阳",
-          depart: "杭州分公司",
-          isLike: true,
-          likeNum: 20,
-        },
-      ];
-      this.haibaoList = templist;
-    },
     initDeparts() {
       if (Array.isArray(departs)) {
         departs.forEach((item) => {
@@ -230,8 +217,30 @@ export default {
         };
       });
     },
+    getStatusByPhone() {
+      const phone = localStorage.getItem("phone_uuid");
+
+      const form = new FormData();
+      form.set("Phone", phone);
+
+      ajax
+        .post("/Poster/GetStatusByPhone", form)
+        .then((res) => {
+          const data = res.data;
+          if (data.Code === 1) {
+            if (data.Status === 1) {
+              this.haveUpload = true;
+              this.GetPosterModel();
+            }
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+    },
     btnOpenModal() {
       this.modalShow = true;
+      this.initOss();
       this.initFileChange();
     },
     departChange(event) {
@@ -240,13 +249,129 @@ export default {
     uploadClick() {
       this.$refs.inputFile.click();
     },
+    likeClick(item) {
+      const fromPhone = localStorage.getItem("phone_uuid");
+      const toPhone = item.Phone;
+      const form = new FormData();
+      form.set("FromPhone", fromPhone);
+      form.set("ToPhone", toPhone);
+
+      ajax
+        .post("/Poster/PosterDoTouPiao", form)
+        .then((res) => {
+          const data = res.data;
+          if (data.Code === 1) {
+            item.isLike = true;
+            item.Total = item.Total + 1;
+            alert(data.Msg);
+          } else {
+            alert(data.Msg);
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+    },
+    GetPosterModel() {
+      const phone_uuid = localStorage.getItem("phone_uuid");
+      const form = new FormData();
+      form.set("Phone", phone_uuid);
+
+      ajax
+        .post("/Poster/GetPosterModel", form)
+        .then((res) => {
+          const data = res.data;
+          if (data.Code == 1) {
+            this.myPoster = this.defaultHost + data.Url;
+          } else {
+            //alert("data", data.Msg);
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+    },
+    imagePreviewClick(url) {
+      this.$hevueImgPreview(url);
+    },
+    getList() {
+      ajax
+        .get("/Poster/GetPosterAndTotal")
+        .then((res) => {
+          const data = res.data;
+          const lists = data.datas;
+          if (Array.isArray(lists)) {
+            lists.forEach((item) => {
+              let tempUrl = "";
+              let originUrl = "";
+              if (item.Url) {
+                tempUrl =
+                  this.defaultHost +
+                  item.Url +
+                  "?x-oss-process=image/resize,m_fill,h_368,w_340";
+                originUrl = this.defaultHost + item.Url;
+              }
+              this.haibaoList.push({
+                img: tempUrl,
+                originUrl: originUrl,
+                name: item.Name,
+                depart: item.Company,
+                isLike: false,
+                likeNum: item.Total,
+                Phone: item.Phone,
+              });
+            });
+            this.originList = JSON.parse(JSON.stringify(this.haibaoList));
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
+    },
     async save() {
+      if (!this.form.Company) {
+        alert("请选择部门");
+        return false;
+      }
+      if (!this.form.Name) {
+        alert("请填写姓名");
+        return false;
+      }
+      if (this.uploadFile == null) {
+        alert("请上传海报");
+        return false;
+      }
       //先上传图片看看ok不ok
       const filekey = await this.uploadHttp(this.uploadFile);
-      console.log("filekey",filekey);
+      const phone = localStorage.getItem("phone_uuid");
+
+      const form = new FormData();
+      form.set("Company", this.form.Company);
+      form.set("Name", this.form.Name);
+      form.set("Phone", phone);
+      form.set("UrlStr", filekey);
+
+      ajax
+        .post("/Poster/UpdatePoster", form)
+        .then((res) => {
+          console.log("res", res);
+          const data = res.data;
+          if (data.Code === 1) {
+            if (data.Status === 1) {
+              this.getList();
+            }
+            localStorage.setItem("xh", data.Xh);
+            this.modalShow = false;
+          } else {
+            alert("data", data.Msg);
+          }
+        })
+        .catch((err) => {
+          console.log("err", err);
+        });
     },
     async uploadHttp(file) {
-      const filekey = "haibao/"+uuidv4();
+      const filekey = "haibao/" + uuidv4();
       const formData = new FormData();
       formData.append("signature", this.ossConfig.signature || "");
       formData.append("OSSAccessKeyId", this.ossConfig.accessid || "");
@@ -254,7 +379,7 @@ export default {
       formData.append("key", filekey);
       formData.append("file", file);
       const res = await axios({
-        url: "http://"+this.ossConfig.host,
+        url: "http://" + this.ossConfig.host,
         method: "POST",
         data: formData,
       });
@@ -266,6 +391,21 @@ export default {
       }
     },
     modalClose() {
+      this.modalShow = false;
+    },
+    handleSearch() {
+      const searchText = this.keywordText;
+      console.log("searchText", searchText);
+      const lists = this.originList;
+      const filterItems = (query) => {
+        return lists.filter((el) => {
+          console.log("el", el);
+          return el.name.toLowerCase().indexOf(query.toLowerCase()) > -1;
+        });
+      };
+      this.haibaoList = filterItems(searchText);
+    },
+    closeBtn() {
       this.modalShow = false;
     },
   },
@@ -287,7 +427,7 @@ export default {
     z-index: 0;
   }
   .search-wrap {
-    margin-top: 320px;
+    margin-top: 390px;
     position: relative;
     display: flex;
     justify-content: center;
@@ -320,7 +460,7 @@ export default {
     flex-wrap: wrap;
     justify-content: space-between;
     margin-top: 24px;
-    height: calc(100vh - 580px);
+    height: calc(100vh - 680px);
     overflow-y: scroll;
     padding-bottom: 30px;
     .haibao {
@@ -374,7 +514,7 @@ export default {
             font-weight: 400;
             line-height: 34px;
             color: #999999;
-            margin-right: 6px;
+            margin-right: 13px;
           }
         }
       }
@@ -416,98 +556,133 @@ export default {
   justify-content: center;
   opacity: 1;
   .dialog {
-    margin-top: 68px;
+    margin-top: 100px;
     width: 640px;
-    height: 900px;
+    height: 780px;
     background: #ffffff;
     opacity: 1;
     border-radius: 24px;
     padding-top: 40px;
-    .wrap {
-      margin-top: 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    .wrap2 {
-      margin-top: 16px;
-      display: flex;
-    }
-    .upload-img {
-      margin-left: 44px;
-      width: 180px;
-      height: 180px;
-      border-radius: 20px;
-      overflow: hidden;
-      img {
-        width: 180px;
-        height: 180px;
-      }
-    }
-    .upload-area {
-      margin-left: 44px;
-      width: 180px;
-      height: 180px;
-      background: rgba(244, 244, 244, 0.39);
-      border: 1px solid #707070;
-      opacity: 1;
-      border-radius: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      img {
-        width: 92px;
-        height: 92px;
-      }
-    }
-
-    .title {
-      padding-left: 60px;
-      margin-top: 20px;
-      font-size: 30px;
-      font-family: PingFang SC;
-      font-weight: 400;
-      line-height: 42px;
-      color: #0f1628;
-    }
-    .select {
-      width: 580px;
-      height: 70px;
-      background: #f4f4f4;
-      border: 1px solid #707070;
-    }
-    .name {
-      width: 540px;
-      height: 70px;
-      background: #f4f4f4;
-      border: 1px solid #707070;
-    }
-    .mubiao {
-      width: 540px;
-      height: 232px;
-      background: #f4f4f4;
-      border: 1px solid #707070;
-    }
-    .btn-wrap {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      .btn {
-        margin-top: 50px;
-        width: 560px;
-        height: 90px;
-        background: #c35901;
-        opacity: 1;
-        border-radius: 200px;
+    .input-dialog {
+      .wrap {
+        margin-top: 16px;
         display: flex;
         justify-content: center;
         align-items: center;
-        .txt {
-          font-size: 36px;
-          font-family: PingFang SC;
-          font-weight: bold;
-          line-height: 50px;
-          color: #ffffff;
+      }
+      .wrap2 {
+        margin-top: 16px;
+        display: flex;
+      }
+      .upload-img {
+        margin-left: 44px;
+        width: 180px;
+        height: 180px;
+        border-radius: 20px;
+        overflow: hidden;
+        img {
+          width: 180px;
+          height: 180px;
+        }
+      }
+      .upload-area {
+        margin-left: 44px;
+        width: 180px;
+        height: 180px;
+        background: rgba(244, 244, 244, 0.39);
+        border: 1px solid #707070;
+        opacity: 1;
+        border-radius: 20px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        img {
+          width: 92px;
+          height: 92px;
+        }
+      }
+
+      .title {
+        padding-left: 60px;
+        margin-top: 20px;
+        font-size: 30px;
+        font-family: PingFang SC;
+        font-weight: 400;
+        line-height: 42px;
+        color: #0f1628;
+      }
+      .select {
+        width: 580px;
+        height: 70px;
+        background: #f4f4f4;
+        border: 1px solid #707070;
+      }
+      .name {
+        width: 540px;
+        height: 70px;
+        background: #f4f4f4;
+        border: 1px solid #707070;
+      }
+      .mubiao {
+        width: 540px;
+        height: 232px;
+        background: #f4f4f4;
+        border: 1px solid #707070;
+      }
+      .btn-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        .btn {
+          margin-top: 50px;
+          width: 560px;
+          height: 90px;
+          background: #c35901;
+          opacity: 1;
+          border-radius: 200px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          .txt {
+            font-size: 36px;
+            font-family: PingFang SC;
+            font-weight: bold;
+            line-height: 50px;
+            color: #ffffff;
+          }
+        }
+      }
+    }
+    .haveImg {
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      img {
+        width: 560px;
+        height: 610px;
+      }
+      .btn-wrap {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        .btn {
+          margin-top: 50px;
+          width: 560px;
+          height: 90px;
+          background: #c35901;
+          opacity: 1;
+          border-radius: 200px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          .txt {
+            font-size: 36px;
+            font-family: PingFang SC;
+            font-weight: bold;
+            line-height: 50px;
+            color: #ffffff;
+          }
         }
       }
     }

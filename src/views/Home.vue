@@ -124,6 +124,9 @@ export default {
     };
   },
   components: {},
+  created(){
+    document.title = "外服工会新年Flag";
+  },
   mounted() {
     this.initBg();
     this.initStatus();

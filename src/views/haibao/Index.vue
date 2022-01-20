@@ -306,6 +306,7 @@ export default {
           const data = res.data;
           const lists = data.datas;
           if (Array.isArray(lists)) {
+            const tempLists = [];
             lists.forEach((item) => {
               let tempUrl = "";
               let originUrl = "";
@@ -316,7 +317,7 @@ export default {
                   "?x-oss-process=image/resize,m_fill,h_368,w_340";
                 originUrl = this.defaultHost + item.Url;
               }
-              this.haibaoList.push({
+              tempLists.push({
                 img: tempUrl,
                 originUrl: originUrl,
                 name: item.Name,
@@ -326,6 +327,7 @@ export default {
                 Phone: item.Phone,
               });
             });
+            this.haibaoList = tempLists;
             this.originList = JSON.parse(JSON.stringify(this.haibaoList));
           }
         })
@@ -364,11 +366,15 @@ export default {
           if (data.Code === 1) {
             if (data.Status === 1) {
               this.getList();
+              this.getStatusByPhone();
+              localStorage.setItem("xh", data.Xh);
+              this.modalShow = false;
+            } else {
+              alert(data.Msg);
+              this.modalShow = false;
             }
-            localStorage.setItem("xh", data.Xh);
-            this.modalShow = false;
           } else {
-            alert("data", data.Msg);
+            alert(data.Msg);
           }
         })
         .catch((err) => {

@@ -53,7 +53,7 @@
         </div>
       </div>
       <div class="btn-wrap">
-        <div v-on:click="btnOpenModal" class="btn">我的海报</div>
+        <div v-show="canSubmit" v-on:click="btnOpenModal" class="btn">我的海报</div>
       </div>
     </div>
     <div class="modal" v-show="modalShow">
@@ -146,7 +146,7 @@ export default {
         Name: "",
         ImageUrl: "",
       },
-      canSubmit: true,
+      canSubmit: false,
       uploadImg: "",
       uploadFile: null,
       departOptions: [],
@@ -430,6 +430,9 @@ export default {
             this.canSubmit = false;
             alert(data.Msg);
           }
+          if (data.Msg === "false") {
+            this.canSubmit = false;
+          }
         })
         .catch((err) => {
           this.canSubmit = false;
@@ -488,7 +491,7 @@ export default {
     flex-wrap: wrap;
     justify-content: space-between;
     margin-top: 24px;
-    height: calc(100vh - 680px);
+    height: calc(100vh - 580px);
     overflow-y: scroll;
     padding-bottom: 30px;
     .haibao {

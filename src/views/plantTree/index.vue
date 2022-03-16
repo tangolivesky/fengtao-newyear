@@ -2,7 +2,7 @@
   <div id="planttree">
     <div class="bg" id="bg"></div>
     <div class="content">
-      <div class="danmu"></div>
+      <!-- <div class="danmu"></div> -->
       <div class="logo-wrap">
         <div v-show="pageShow">
           <img class="logo" src="../../assets/plantTree/tree.png" />
@@ -12,6 +12,15 @@
             height="780"
             id="starCanvas"
           ></canvas>
+        </div>
+        <div class="sheep">
+
+        </div>
+      </div>
+
+      <div class="bottom">
+
+        <div class="plant_tree">
         </div>
       </div>
     </div>
@@ -137,6 +146,7 @@ export default {
     top: 0;
     left: 0;
     right: 0;
+    z-index: -1;
   }
   .content {
     .danmu {
@@ -146,7 +156,7 @@ export default {
     .logo-wrap {
       position: relative;
       width: 750px;
-      height: 720px;
+      margin-top: 308px;
       .logo {
         width: 750px;
         height: 780px;
@@ -159,6 +169,18 @@ export default {
         height: 780px;
         z-index: 99;
       }
+      .sheep{
+        position: absolute;
+        width: 238px;
+        height: 208px;
+        background: url("../../assets/plantTree/sheep.png") no-repeat center center;
+        background-size: cover;
+        bottom: -70px;
+        right: 80px;
+      }
+    }
+    .bottom{
+      position: relative;
     }
   }
 }

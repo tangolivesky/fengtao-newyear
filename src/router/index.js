@@ -39,6 +39,11 @@ const routes = [{
     name: 'Result',
     component: Result
   },
+  {
+    path: '/planttree',
+    name: 'PlantTree',
+    component: () => import( /* webpackChunkName: "about" */ '../views/plantTree/index.vue')
+  },
 ]
 
 const router = new VueRouter({

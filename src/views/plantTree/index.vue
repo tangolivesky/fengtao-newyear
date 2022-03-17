@@ -17,7 +17,7 @@
       </div>
 
       <div class="bottom">
-        <div class="plant_tree_btn" @click="plantTree"></div>
+        <div class="plant_tree_btn" @click="plantTree" v-if="canJoinActive"></div>
       </div>
     </div>
     <div class="modal" v-show="modalShow" @click="closeDlg">
@@ -82,8 +82,8 @@
           </div>
         </div>
         <div class="btn-wrap">
-          <div class="btn" v-on:click="nexStep" v-if="canJoinActive">
-            <div class="txt">{{btnText}}</div>
+          <div class="btn" v-on:click="nexStep">
+            <div class="txt">{{ btnText }}</div>
           </div>
         </div>
       </div>
@@ -103,6 +103,7 @@ export default {
   name: "App",
   data() {
     return {
+      localUserInfo: {},
       pageShow: true,
       canvasObj: null,
       canvasCtx: null,
@@ -117,8 +118,8 @@ export default {
         Content: "",
       },
       step: 1,
-      btnText:'种下一棵树',
-      canJoinActive:true,
+      btnText: "种下一棵树",
+      canJoinActive: false,
     };
   },
   components: {},
@@ -131,13 +132,13 @@ export default {
     this.initBg();
     this.initDeparts();
     this.initCanvas();
-    this.drawApples();
+    // this.drawApples();
   },
   methods: {
     initStatus() {
       this.localUserInfo = localStorage.getItem("userInfo-plant-tree")
         ? JSON.parse(localStorage.getItem("userInfo-plant-tree"))
-        : null;
+        : {};
       if (this.localUserInfo && this.localUserInfo.personxh) {
         const form = new FormData();
         form.set("Xh", this.localUserInfo.personxh);
@@ -146,28 +147,30 @@ export default {
           .then((res) => {
             const data = res.data;
             if (data.Code === 1) {
-              console.log(data)
+              this.canJoinActive = data.Status == 1 ? false : true;
             }
           })
           .catch((err) => {
             console.log("err", err);
           });
+      }else{
+        this.canJoinActive = true
       }
     },
     initDatas() {
       ajax
         .get("/Tree/GetAll")
         .then((res) => {
-          const data = res.data;
+          const data = res.data.datas;
           let tempSet = new Map();
           data.forEach((item) => {
             tempSet.set(item.Xh, item.Xh);
           });
-          this.localApples = this.localApples.map((star) => {
-            if (tempSet.has(star.id.toString())) {
-              star.status = true;
+          this.localApples = this.localApples.map((apples) => {
+            if (tempSet.has(apples.id.toString())) {
+              apples.status = true;
             }
-            return star;
+            return apples;
           });
           this.drawApples();
         })
@@ -204,14 +207,13 @@ export default {
     },
     //画星星，需要调用接口获取已经点亮的星星
     drawApples() {
-      const personxh = localStorage.getItem("personxh");
+      const personxh = this.localUserInfo.personxh || "";
       this.canvasCtx.clearRect(0, 0, 750, 720); // clear canvas
-      console.log("this.localApples", this.localApples);
       this.localApples.forEach((item) => {
         const img = new Image();
         if (item.status === true) {
           //如果是自己的星星,展示黄色
-          if (personxh === item.id.toString()) {
+          if (personxh == item.id) {
             img.src = yellowAppleImg;
             img.onload = () => {
               this.canvasCtx.drawImage(
@@ -234,17 +236,6 @@ export default {
               );
             };
           }
-        } else {
-          img.src = redAppleImg;
-          img.onload = () => {
-            this.canvasCtx.drawImage(
-              img,
-              item.x,
-              item.y,
-              item.width,
-              item.height
-            );
-          };
         }
       });
     },
@@ -272,7 +263,7 @@ export default {
           alert("请填写您的收件地址");
           return;
         }
-        this.btnText = '写下祝福'
+        this.btnText = "写下祝福";
       }
       if (this.step == 2) {
         if (this.form.Content.trim() === "") {
@@ -296,9 +287,12 @@ export default {
         .post("Tree/UpdateContent", postForm)
         .then((res) => {
           const data = res.data;
-
           if (data.Code === 1) {
-            console.log(data);
+            this.modalShow = false;
+            this.canJoinActive = false;
+            this.initDatas();
+            alert('提交成功');
+            this.setStorage(data);
           } else {
             alert(data.Msg);
           }
@@ -318,8 +312,15 @@ export default {
         Name: "",
         Phone: "",
         Address: "",
-        Content:''
+        Content: "",
       };
+    },
+    setStorage(data) {
+      this.localUserInfo.personxh = data.Xh;
+      localStorage.setItem(
+        "userInfo-plant-tree",
+        JSON.stringify(this.localUserInfo)
+      );
     },
   },
 };
